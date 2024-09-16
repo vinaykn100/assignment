@@ -1,0 +1,23 @@
+{
+  "name": "monty-assignment",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "local-s3": "serverless s3 start",
+    "server-local": "python python app/main.py",
+    "dev": "run-s local-s3 server-local"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "aws-cli": "^0.0.2",
+    "serverless": "^3.39.0",
+    "serverless-localstack": "^1.2.1",
+    "serverless-offline": "^13.8.0",
+    "serverless-python-requirements": "^6.1.1",
+    "serverless-s3-local": "^0.8.5"
+  }
+}

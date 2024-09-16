@@ -1,0 +1,97 @@
+service: monty-assignment
+frameworkVersion: '3'
+variablesResolutionMode: 20210326
+useDotenv: true
+configValidationMode: error
+
+custom:
+  devMode: 'code'
+  deployEnv: ${param:Env, 'dev'}
+  stackOwner: ${param:owner, 'default'}
+  bucketName: images-bucket
+  logRetentionInDays: 14
+  s3:
+    host: localhost
+    directory: /tmp
+    port: 4569
+
+provider:
+  name: aws
+  endpointType: REGIONAL
+  lambdaHashingVersion: 20201221
+  runtime: python3.7
+  stage: ${self:custom.devMode}
+  region: 'us-east-1'
+  environment:
+    STG: ${self:custom.deployEnv}
+  deploymentPrefix: ${self:custom.devMode}
+  iam:
+    role: 
+      name: image-service-stack-role
+      statements:
+        - Effect: 'Allow'
+          Resource: '*'
+          Action: '*'
+package:
+  individually: true
+  exclude:
+    - 'monty-assignment/lib/**'
+
+functions:
+  image-service:
+    name: image-service
+    handler: app/main.handler
+    environment:
+      functionName: cf-s4-invoice-cash-transactions
+      imagesBucket: ${self:custom.bucketName}
+    package:
+      individually: true
+      exclude:
+        - "./**"
+    memorySize: 512
+    timeout: 30
+    tracing: Active
+    layers:
+      - { Ref: PackageLayerLambdaLayer }
+    reservedConcurrency: 50
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+
+resources:
+  Resources:
+    imagesMDTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: images-metadata
+        AttributeDefinitions:
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    
+    imagesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: images-bucket
+
+layers:
+  packageLayer:
+    path: packageLayer
+    compatibleRuntimes:
+      - python3.7
+    package:
+      include:
+        - monty-assignment/lib/**
+
+plugins:
+  # - serverless-dynamodb-local
+  - serverless-offline
+  - serverless-s3-local
+  - serverless-python-requirements
